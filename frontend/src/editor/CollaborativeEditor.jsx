@@ -6,6 +6,7 @@ import { MonacoBinding } from "y-monaco";
 import Sidebar from "../components/Sidebar";
 import Chat from "../components/Chat";
 import { Play, Share2, MessageCircle, Settings, Users, History, Sun, Moon, TerminalSquare, X, FolderGit2, Plus, Trash2, FileCode } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function CollaborativeEditor({
   ydoc,
@@ -41,6 +42,43 @@ export default function CollaborativeEditor({
   const [currentYText, setCurrentYText] = useState(null); // Track underlying Y.Text instance
   
   const filesMap = ydoc.getMap("files");
+  const prevUsersRef = useRef([]);
+
+  // Notify when users join or leave
+  useEffect(() => {
+    // Skip firing notifications on the very first render when the initial user list loads
+    if (prevUsersRef.current.length === 0 && users.length > 0) {
+      prevUsersRef.current = users;
+      return;
+    }
+
+    const prevIds = prevUsersRef.current.map((u) => u.socketId);
+    const currIds = users.map((u) => u.socketId);
+
+    // Alert new joins
+    users.forEach((u) => {
+      if (!prevIds.includes(u.socketId)) {
+        toast.success(`${u.username || "A developer"} joined`, {
+          icon: "👋",
+          id: `join-${u.socketId}`,
+          style: { background: "#1e1e24", color: "#fff", fontSize: "12px", border: "1px solid rgba(255,255,255,0.1)" },
+        });
+      }
+    });
+
+    // Alert disconnects
+    prevUsersRef.current.forEach((u) => {
+      if (!currIds.includes(u.socketId)) {
+        toast.error(`${u.username || "A developer"} left`, {
+          icon: "🏃‍♂️",
+          id: `leave-${u.socketId}`,
+          style: { background: "#1e1e24", color: "#9ca3af", fontSize: "12px", border: "1px solid rgba(255,255,255,0.05)" },
+        });
+      }
+    });
+
+    prevUsersRef.current = users;
+  }, [users]);
 
   const handleEditorDidMount = useCallback((editor) => {
     editorRef.current = editor;
