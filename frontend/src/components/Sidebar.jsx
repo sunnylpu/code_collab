@@ -94,31 +94,34 @@ export default function Sidebar({
                 )}
                 {users.map((u) => (
                   <li
-                    key={u.socketId || u.name}
-                    className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-editor-hover transition-colors"
+                    key={u.clientId || u.socketId || u.name}
+                    className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-editor-hover transition-colors border border-transparent shadow-sm"
                   >
                     {/* Avatar */}
                     <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 shadow-sm"
                       style={{
                         background: withAlpha(u.color || "#888", 0.25),
                         color: u.color,
-                        border: `2px solid ${u.color || "#888"}`,
+                        border: `1px solid ${u.color || "#888"}`,
                       }}
                     >
                       {getInitials(u.name)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-editor-text truncate">{u.name}</p>
-                      {u.cursor && (
-                        <p className="text-[10px] text-editor-muted">
-                          Ln {u.cursor.line}, Col {u.cursor.column}
-                        </p>
-                      )}
+                      <p className="text-xs font-bold text-gray-200 truncate">{u.name}</p>
+                      
+                      {/* Telemetry output */}
+                      <p className={`text-[10px] truncate ${u.activity && u.activity !== 'idle' ? 'text-indigo-400 font-medium' : 'text-gray-500'}`}>
+                        {u.activity && u.activity !== 'idle' 
+                          ? u.activity 
+                          : `in ${u.activeFile || 'files'}`
+                        }
+                      </p>
                     </div>
                     <span
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{ background: u.color || "#3fb950" }}
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 shadow-[0_0_5px_currentColor] ${u.activity && u.activity !== 'idle' ? 'animate-pulse scale-125' : 'opacity-70'}`}
+                      style={{ background: u.color || "#3fb950", color: u.color || "#3fb950" }}
                     />
                   </li>
                 ))}

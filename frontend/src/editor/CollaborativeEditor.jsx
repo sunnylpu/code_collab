@@ -144,20 +144,53 @@ export default function CollaborativeEditor({
     monaco.editor.setModelLanguage(model, newLang);
     onLanguageChange?.(newLang); // Inform parent for execution
 
-  }, [currentYText, activeFile, awareness, editorReady, onLanguageChange]);
+    // ── Attach Monaco Telemetry Hooks ──
+    const editor = editorRef.current;
+    
+    // Typing detection
+    const modelContentDisposable = editor.onDidChangeModelContent(() => {
+      updateTelemetry({ activity: "typing..." });
+      clearTimeout(telemetryTimeoutRef.current);
+      telemetryTimeoutRef.current = setTimeout(() => updateTelemetry({ activity: "idle" }), 2000);
+    });
 
-  // Update awareness local state when user changes
-  useEffect(() => {
-    if (awareness && user) {
-      // Use "username" if "name" is missing, which is highly likely based on auth response
-      awareness.setLocalStateField("user", {
-        name: user.username || user.name,
-        color: user.color,
-      });
-    }
+    // Selection detection
+    const cursorSelectionDisposable = editor.onDidChangeCursorSelection((e) => {
+      const { startLineNumber, endLineNumber } = e.selection;
+      if (startLineNumber !== endLineNumber) {
+        updateTelemetry({ activity: `selecting lines ${startLineNumber}-${endLineNumber}` });
+        clearTimeout(telemetryTimeoutRef.current);
+        telemetryTimeoutRef.current = setTimeout(() => updateTelemetry({ activity: "idle" }), 3000);
+      }
+    });
+
+    return () => {
+      modelContentDisposable.dispose();
+      cursorSelectionDisposable.dispose();
+    };
+
+  }, [currentYText, activeFile, awareness, editorReady, onLanguageChange, updateTelemetry]);
+
+  // ── Smart Presence (Operational Awareness) ───────────────────────────
+  const telemetryTimeoutRef = useRef(null);
+
+  const updateTelemetry = useCallback((update) => {
+    if (!awareness || !user) return;
+    const currentState = awareness.getLocalState()?.user || {};
+    awareness.setLocalStateField("user", {
+      ...currentState,
+      name: user.username || user.name || "Anonymous",
+      color: user.color,
+      ...update
+    });
   }, [awareness, user]);
 
-  // Track all awareness states to inject dynamic CSS for cursor names
+  // Sync active file on change
+  useEffect(() => {
+    updateTelemetry({ activeFile, activity: "idle" });
+  }, [activeFile, updateTelemetry]);
+
+  // Track all awareness states to inject dynamic CSS for cursor names and Sidebar telemetry
   useEffect(() => {
     if (!awareness) return;
     const updateUsers = () => setAwarenessUsers(Array.from(awareness.getStates().entries()));
@@ -438,7 +471,13 @@ export default function CollaborativeEditor({
               <Sidebar 
                 roomId={roomId} 
                 connected={connected} 
-                users={users} 
+                users={awarenessUsers.map(([clientId, state]) => ({
+                  clientId,
+                  name: state.user?.name || "Anonymous",
+                  color: state.user?.color || "#555",
+                  activeFile: state.user?.activeFile || "unknown",
+                  activity: state.user?.activity || "idle",
+                }))} 
               />
             )}
             {activeTab === "settings" && (
