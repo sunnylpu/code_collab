@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import * as Y from "yjs";
 import { io } from "socket.io-client";
 import * as awareness from "y-protocols/awareness";
+import { IndexeddbPersistence } from "y-indexeddb";
 import { getColorForUser } from "../utils/colors";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5050";
@@ -31,7 +32,14 @@ export function useYjs(roomId, user) {
     const ydoc = ydocRef.current;
     const awarenessInstance = awarenessRef.current;
 
-    // Connect to Socket.io
+    // ── Offline Persistence (IndexedDB) ──────────────────────────────────
+    // Load local workspace state before connecting to network to enforce "Offline-First"
+    const indexeddbProvider = new IndexeddbPersistence(roomId, ydoc);
+    indexeddbProvider.on("synced", () => {
+      console.log(`💾 [IndexedDB] Offline state loaded for room: ${roomId}`);
+    });
+
+    // ── Network Connect (Socket.io) ──────────────────────────────────────
     const socket = io(BACKEND_URL, {
       transports: ["websocket"],
     });
@@ -39,7 +47,7 @@ export function useYjs(roomId, user) {
 
     socket.on("connect", () => {
       setConnected(true);
-      console.log("✅ Socket connected, joining room:", roomId);
+      console.log("✅ Socket connected, joined room:", roomId);
       socket.emit("join-room", { roomId, user });
     });
 
@@ -85,6 +93,7 @@ export function useYjs(roomId, user) {
     return () => {
       ydoc.off("update", handleLocalUpdate);
       socket.disconnect();
+      indexeddbProvider.destroy(); // Safely close IndexedDB connection when unmounting
       setConnected(false);
     };
   }, [roomId, user]);
