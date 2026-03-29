@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Global resets ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --scrollbar-thumb: #30363d;
+  --scrollbar-track: #161b22;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+/* ── Monaco editor overrides ────────────────────────────────── */
+.monaco-editor .cursor { animation: blink 1s step-end infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* Remote user cursor labels */
+.remote-cursor-label {
+  @apply px-1.5 py-0.5 rounded text-xs font-medium text-white pointer-events-none;
+  white-space: nowrap;
+  position: absolute;
+  top: -22px;
+  left: 0;
+  z-index: 10;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ── Glassmorphic card ─────────────────────────────────────── */
+@layer components {
+  .glass-card {
+    @apply bg-editor-sidebar border border-editor-border rounded-xl backdrop-blur-sm;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm
+           bg-editor-accent text-editor-bg hover:bg-blue-400 active:scale-95
+           transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-editor-accent/50;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium
+           text-editor-muted hover:text-editor-text hover:bg-editor-hover
+           transition-all duration-150;
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2 rounded-lg bg-editor-bg border border-editor-border
+           text-editor-text placeholder:text-editor-muted text-sm
+           focus:outline-none focus:ring-1 focus:ring-editor-accent focus:border-editor-accent
+           transition-colors duration-150;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+           bg-editor-hover text-editor-muted border border-editor-border;
+  }
+}
+
+/* ── Animations ────────────────────────────────────────────── */
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.25s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Presence dots ─────────────────────────────────────────── */
+.presence-dot {
+  @apply w-2 h-2 rounded-full bg-editor-green;
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.4); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(63, 185, 80, 0); }
+}
+
+/* ── Split layout ──────────────────────────────────────────── */
+.editor-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.editor-layout.chat-open {
+  grid-template-columns: 1fr 280px;
+}
+
+@media (max-width: 768px) {
+  .editor-layout {
+    grid-template-columns: 1fr;
+  }
+}
